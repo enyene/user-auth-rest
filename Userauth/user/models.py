@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from .managers import CustomerUserManager
+from django.template.defaultfilters import slugify 
+from .utils import generate_random_id
 # Create your models here.
 
 class CustomerUser(AbstractUser):
@@ -20,6 +23,7 @@ class CustomerUser(AbstractUser):
     
     username = None
     email = models.EmailField(unique=True)
+    slug = models.SlugField(blank=True, unique=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -27,4 +31,22 @@ class CustomerUser(AbstractUser):
     class Meta:
         verbose_name = 'CustomerUser'
         ordering = ['email']
-        
+
+
+    def __str__(self):
+        return self.email
+
+
+    objects = CustomerUserManager()
+
+    # create  a default slug /username for user if blank
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            # create a slug
+
+           random_slug=slugify(self.first_name + self.last_name+generate_random_id())
+           while CustomerUser.objects.filter(slug=random_slug).exists():
+               random_slug=slugify(self.first_name + self.last_name+generate_random_id())
+           self.slug = random_slug
+        super().save(*args, **kwargs)
